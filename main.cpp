@@ -13,15 +13,26 @@ void setup() {
   set_microros_serial_transports(Serial);
   allocator = rcl_get_default_allocator();
   RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
+
+  //node
   RCCHECK(rclc_node_init_default(&node, "microros", "", &support));
+
+  //topic
   const char *cmdvel_name = "/cmd_vel";
   const rosidl_message_type_support_t *Twist_type =
   ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist);
+
+  //subscriber
   RCCHECK(rclc_subscription_init_default(
       &cmdvel_subscriber, &node,
       Twist_type, cmdvel_name));
   RCCHECK(rclc_executor_init(&executor, &support.context, 4, &allocator));
   RCCHECK(rclc_executor_add_subscription(&executor, &cmdvel_subscriber, &msg_cmdvel, &cmdvel_callback, ON_NEW_DATA));
+  const rosidl_message_type_support_t *Int32_type =
+      ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int32);
+  RCCHECK(rclc_subscription_init_default(&dummy_stat, &node,Int32_type, "/dummy_stat"));
+  RCCHECK(rclc_executor_add_subscription(&executor, &dummy_stat, &msg_dummy_stat, &dummy_stat_callback, ON_NEW_DATA));
+
 void cmdvel_callback(const void *msgin)
 {
   // subscribes from cmd_vel topic and feeds it to motors
@@ -42,8 +53,6 @@ void cmdvel_callback(const void *msgin)
 
 void loop() {
   // put your main code here, to run repeatedly:
-  time_t time = millis();
-  //rotation(time);
   multiplication(vx,vy,vw);
   direction_pwm();
   digitalWrite(MD1_DIR,direction[0]);
